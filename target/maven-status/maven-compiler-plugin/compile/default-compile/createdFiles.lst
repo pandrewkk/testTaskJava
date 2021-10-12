@@ -1,0 +1,6 @@
+com\andrey\demo\dao\BookDAO.class
+com\andrey\demo\servlet\MainServlet.class
+com\andrey\demo\model\Book.class
+com\andrey\demo\dao\DAO.class
+com\andrey\demo\servlet\AddBookServlet.class
+com\andrey\demo\BookFields.class

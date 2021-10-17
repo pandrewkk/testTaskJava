@@ -1,7 +1,6 @@
 package com.andrey.demo.model;
 
 import java.net.URL;
-import java.util.Objects;
 
 public class Book {
     private long id;

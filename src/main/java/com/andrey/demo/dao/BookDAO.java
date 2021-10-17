@@ -4,30 +4,24 @@ import com.andrey.demo.model.Book;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class BookDAO {
+    public static final String URL = "jdbc:postgresql://localhost:5432/books_data";
+    public static final String USER = "postgres";
+    public static final String PASSWORD = "*";
+
     private static BookDAO instance;
 
-    private final List<Book> bookList;
-    private long id;
+    private Connection connection;
 
     private BookDAO() {
-        this.bookList = new ArrayList<>();
-        this.id = 0;
         try {
-            add(
-                    new Book(
-                            "А. С. Пушкин",
-                            "Сказка о рыбаке и рыбке",
-                            "Сказка",
-                            new URL("https://cdn.shopify.com/s/files/1/2467/0413/products/70a0df668cdfa35d19faa9116cf1b795_1024x1024.jpg?v=1612279058"),
-                            1833,
-                            "Произведение в стихах А.С. Пушкина, любимая детьми вот уже в течение двух веков. В ней повествуется о необычайной удаче простого рыбака, которой воспользовалась его жена. ")
-            );
-        } catch (MalformedURLException e) {
+            Class.forName("org.postgresql.Driver");
+            connection = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
     }
@@ -38,33 +32,71 @@ public class BookDAO {
     }
 
     public List<Book> getAll() {
-        return new ArrayList<>(bookList);
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select * from books");
+            ArrayList<Book> bookList = new ArrayList<>();
+            while (resultSet.next()) {
+                bookList.add(new Book(
+                        resultSet.getLong("id"),
+                        resultSet.getString("author"),
+                        resultSet.getString("title"),
+                        resultSet.getString("genre"),
+                        new URL(resultSet.getString("cover")),
+                        resultSet.getInt("year"),
+                        resultSet.getString("description")
+                ));
+            }
+            return bookList;
+        } catch (SQLException | MalformedURLException e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     public Book getById(long id) {
-        for (Book book : bookList) {
-            if (id == book.getId()) {
-               return book;
-            }
+        try {
+            PreparedStatement statement = connection.prepareStatement("select * from books where id = ?");
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (!resultSet.next()) return null;
+            return new Book(
+                    resultSet.getLong("id"),
+                    resultSet.getString("author"),
+                    resultSet.getString("title"),
+                    resultSet.getString("genre"),
+                    new URL(resultSet.getString("cover")),
+                    resultSet.getInt("year"),
+                    resultSet.getString("description")
+            );
+        } catch (SQLException | MalformedURLException e) {
+            e.printStackTrace();
+            return null;
         }
-        throw new IllegalStateException("Book with id " + id + " not found");
     }
 
     public void add(Book book) {
-        book.setId(id);
-        id++;
-        bookList.add(book);
+        try {
+            PreparedStatement statement = connection.prepareStatement("insert into books(author, title, genre, cover, year, description) values (?, ?, ?, ?, ?, ?)");
+            statement.setString(1, book.getAuthor());
+            statement.setString(2, book.getTitle());
+            statement.setString(3, book.getGenre());
+            statement.setString(4, book.getCoverUrl().toString());
+            statement.setInt(5, book.getYear());
+            statement.setString(6, book.getDescription());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void delete(long id) {
-        Iterator<Book> bookIterator = bookList.iterator();
-        Book book;
-        while (bookIterator.hasNext()) {
-            book = bookIterator.next();
-            if (book.getId() == id) {
-                bookIterator.remove();
-                return;
-            }
+        try {
+            PreparedStatement statement = connection.prepareStatement("delete from books where id = ?");
+            statement.setLong(1, id);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

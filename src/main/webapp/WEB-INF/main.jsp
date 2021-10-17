@@ -81,5 +81,6 @@
     </c:forEach>
     </tbody>
 </table>
+    <script type="module" src="${pageContext.request.contextPath}/sortTable.js"></script>
 </body>
 </html>

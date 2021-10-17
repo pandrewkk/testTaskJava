@@ -12,10 +12,10 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Библиотека</title>
 </head>
 <body>
-<h2>Books</h2>
+<h2>Библиотека</h2>
 <table class="table-sortable">
     <thead>
     <tr>
@@ -81,5 +81,6 @@
     </c:forEach>
     </tbody>
 </table>
+    <script type="module" src="${pageContext.request.contextPath}/sortTable.js"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class MainServlet extends HttpServlet {
-    private final BookFields bookFields = BookFields.withAll().setDescription(false).setCover(false);
+    private final BookFields bookFields = BookFields.withAll();
     private final BookDAO bookDAO = BookDAO.getInstance();
 
     @Override

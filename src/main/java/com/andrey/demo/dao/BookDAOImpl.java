@@ -7,6 +7,9 @@ import com.andrey.demo.model.Book;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.*;
@@ -16,22 +19,15 @@ import java.util.List;
 public class BookDAOImpl implements BookDAO {
     private static final Logger log = LoggerFactory.getLogger(BookDAOImpl.class);
 
-    public static final String URL = "jdbc:postgresql://localhost:5432/books_data";
-    public static final String USER = "postgres";
-    public static final String PASSWORD = "*";
-
     private static BookDAOImpl instance;
 
-    private final Connection connection;
+    private final DataSource dataSource;
 
     private BookDAOImpl() {
         try {
-            Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException e) {
-            throw new InitializationException("Ошибка инициализации BookDAO: класс драйвера не найден");
-        } catch (SQLException e) {
-            throw new InitializationException("Ошибка инициализации BookDAO");
+            dataSource = (DataSource) new InitialContext().lookup("java:/comp/env/jdbc/books_data");
+        } catch (NamingException e) {
+            throw new InitializationException("Ошибка инициализации DataSource: " + e.getMessage());
         }
     }
 
@@ -42,7 +38,7 @@ public class BookDAOImpl implements BookDAO {
 
     @Override
     public List<Book> getAll() {
-        try (Statement statement = connection.createStatement()) {
+        try (Statement statement = getConnection().createStatement()) {
             ResultSet resultSet = statement.executeQuery("select * from books");
             ArrayList<Book> bookList = new ArrayList<>();
             while (resultSet.next()) {
@@ -66,7 +62,7 @@ public class BookDAOImpl implements BookDAO {
     @Override
     public Book getById(long id) {
         final String sql = "select * from books where id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
             statement.setLong(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (!resultSet.next()) throw new BookNotFoundException(id);
@@ -88,7 +84,7 @@ public class BookDAOImpl implements BookDAO {
     @Override
     public void add(Book book) {
         final String sql = "insert into books(author, title, genre, cover, year, description) values (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
             statement.setString(1, book.getAuthor());
             statement.setString(2, book.getTitle());
             statement.setString(3, book.getGenre());
@@ -105,12 +101,16 @@ public class BookDAOImpl implements BookDAO {
     @Override
     public void delete(long id) {
         final String sql = "delete from books where id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
             statement.setLong(1, id);
             statement.executeUpdate();
         } catch (SQLException e) {
             log.error("Cannot delete book", e);
             throw new DatabaseException("Не удалось удалить книгу");
         }
+    }
+
+    private Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 }
